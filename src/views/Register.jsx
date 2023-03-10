@@ -115,8 +115,8 @@ export default function Register() {
               <Select {...register('supplier')}
                 label="type supplier"
               >
-                <MenuItem value={true}>Fornecedor</MenuItem>
-                <MenuItem value={false}>Contratante</MenuItem>
+                <MenuItem value={Boolean(true)}>Fornecedor</MenuItem>
+                <MenuItem value={Boolean(false)}>Contratante</MenuItem>
               </Select>
               <FormHelperText>{errors.supplier?.message}</FormHelperText>
             </FormControl>

@@ -179,7 +179,7 @@ export const SearchWrapper = styled.div`
 
     .input-container{
         display: flex;
-        justify-content: center;
+        justify-content: space-around;
         width: 100%;
         padding: 15px 0;
     }

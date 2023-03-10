@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react'
 import { SearchWrapper } from './styles'
-import { TextField, Button } from '@mui/material'
+import axios from 'axios';
 
 import { getFirestore, collection, query, where, getDocs } from "firebase/firestore";
 import { app } from '../service/firebaseConfig'
 import Card from '../components/Card';
 
+import { TextField, Button } from '@mui/material'
 import Autocomplete from '@mui/material/Autocomplete';
 
 const db = getFirestore(app)
@@ -14,12 +15,14 @@ const usersRef = collection(db, 'users')
 export default function Search() {
 
     const [currentData, setCurrentData] = useState([])
+
     const [stateFilter, setStateFilter] = useState()
     const [supplierFilter, setSupplieFilter] = useState()
+
+    const [cities, setCities] = useState()
     
     useEffect(() => {
         FirebaseGet(usersRef, setCurrentData)
-        // FirebaseGet(query(usersRef, where("state", "==", 'MG')), setStates)
     }, [])
 
     const FirebaseGet = async (query, setUseState) => {
@@ -33,20 +36,16 @@ export default function Search() {
         setUseState(result)
     }
 
-    const handleFIlters = () => {
-        const myFilters = 
-        [stateFilter, supplierFilter].filters(obj => {
-            
+    const handleFilters = () => {
+        const filters = [stateFilter, supplierFilter].filter(obj => obj != undefined)
+
+        const wheres = filters.map(obj => {
+            return(
+                where(Object.keys(obj)[0], '==', Object.values(obj)[0])
+            )
         })
 
-        for(var obj in myFilters){
-            for (const [key, value] of Object.entries(stateFilter)) {
-                if (value) {
-                    console.log(value);
-                }   
-            }
-        }
-    }
+        FirebaseGet(query(collection(db, 'users'), ...wheres), setCurrentData)
     }
 
     return (
@@ -55,23 +54,52 @@ export default function Search() {
                 <Autocomplete
                     title='state'
                     options={["MG", "SP"]}
-                    sx={{ width: 300 }}
+                    sx={{ width: 200 }}
                     renderInput={(params) => <TextField {...params} label="Estado" />}
-                    onChange={(ev, value) => setStateFilter({'state': value})}
+                    onChange={(ev, value) => {
+                        setStateFilter(value != null ? {'state': value} : undefined)
+
+                        if(value != null){
+                            axios.get(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${value}/distritos`)
+                            .then((res) => {
+                                const resList = []
+                                res.data.forEach(obj => resList.push(obj.nome))
+                                setCities(resList)
+                            })
+                        }
+                    }}
+                    />
+
+                <Autocomplete
+                    disabled={stateFilter == undefined}
+                    name='city'
+                    options={cities}
+                    sx={{ width: 200 }}
+                    renderInput={(params) => <TextField {...params} label="Cidade" />}
+                    />
+
+                <Autocomplete
+                    name='area'
+                    options={["area1", "area2"]}
+                    sx={{ width: 200 }}
+                    renderInput={(params) => <TextField {...params} label="Área" />}
                     />
 
                 <Autocomplete
                     name='supplier'
                     options={["Fornecedor", "Contratante"]}
-                    sx={{ width: 300 }}
+                    sx={{ width: 200 }}
                     renderInput={(params) => <TextField {...params} label="Tipo" />}
-                    onChange={(ev, value) => setSupplieFilter({'supplier': value == 'Fornecedor' ? true : false})}
+                    onChange={(ev, value) => 
+                        setSupplieFilter(value == 'Fornecedor' ? {'supplier': true} :
+                            value == 'Contratante' ? {'supplier': false} : undefined)}
                     />
-        
-                    <input name='teste1' type="text" onChange={(ev) => console.log(ev)} />
-                    {/* <input name='teste2' type="text" onChange={handleChangeFilters} /> */}
 
-                <Button variant='outlined' color='success' onClick={handleFIlters}>Pesquisar</Button>
+                <Button 
+                    style={{minWidth: '100px'}}
+                    variant='outlined' 
+                    color='success' 
+                    onClick={() => console.log(cities)}>Pesquisar</Button>
             </div>
             <div className="cards-container">
                 {
